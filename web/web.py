@@ -11,6 +11,7 @@ from functools import wraps
 
 app = Flask(__name__)
 SUPPORT_KEY = config.SUPPORT_KEY
+
 @app.route('/')
 def index():
     return render_template('operator.html')
