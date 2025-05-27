@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация оператора</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-light: #e0e7ff;
+            --primary-dark: #3a56d0;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            border: 1px solid var(--border-color);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo img {
+            max-width: 120px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            margin-top: 15px;
+            color: var(--text-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+            background-color: var(--bg-color);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: var(--success-color);
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <!-- Замените на свой логотип -->
+            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#4361ee" stroke-width="2"/>
+                <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14M9 9H9.01M15 9H15.01" stroke="#4361ee" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h1>Панель оператора</h1>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Логин</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" class="form-control" placeholder="Введите ваш логин" required>
+                </div>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" class="form-control" placeholder="Введите ваш пароль" required>
+                </div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <button type="submit" class="btn" id="loginBtn">
+                <span id="btnText">Войти</span>
+                <div class="loader" id="btnLoader"></div>
+            </button>
+
+            <div class="error-message" id="formError"></div>
+            <div class="success-message" id="formSuccess"></div>
+        </form>
+
+        <div class="footer">
+            <p>© 2025 Панель оператора</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const formError = document.getElementById('formError');
+            const formSuccess = document.getElementById('formSuccess');
+
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                // Сброс сообщений об ошибках
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+                formSuccess.style.display = 'none';
+
+                // Получаем значения полей
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                // Валидация
+                let isValid = true;
+
+                if (!username) {
+                    document.getElementById('usernameError').textContent = 'Введите логин';
+                    document.getElementById('usernameError').style.display = 'block';
+                    isValid = false;
+                }
+
+                if (!password) {
+                    document.getElementById('passwordError').textContent = 'Введите пароль';
+                    document.getElementById('passwordError').style.display = 'block';
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                // Показываем лоадер
+                btnText.style.display = 'none';
+                btnLoader.style.display = 'block';
+                loginBtn.disabled = true;
+
+                try {
+                    // Имитация запроса к серверу (замените на реальный запрос)
+                    const response = await authenticate(username, password);
+
+                    if (response.success) {
+                        // Успешная авторизация
+                        formSuccess.textContent = 'Авторизация успешна! Перенаправляем...';
+                        formSuccess.style.display = 'block';
+
+                        // Перенаправляем на главную страницу
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        // Ошибка авторизации
+                        formError.textContent = response.message || 'Неверный логин или пароль';
+                        formError.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Ошибка при авторизации:', error);
+                    formError.textContent = 'Произошла ошибка при авторизации';
+                    formError.style.display = 'block';
+                } finally {
+                    // Скрываем лоадер
+                    btnText.style.display = 'block';
+                    btnLoader.style.display = 'none';
+                    loginBtn.disabled = false;
+                }
+            });
+
+            async function authenticate(username, password) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const response = await fetch('/api/operator/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                return await response.json();
+
+                // Пример ответа для демонстрации:
+                if (username === 'operator' && password === 'password123') {
+                    return {
+                        success: true,
+                        token: 'demo-token-123456',
+                        message: 'Авторизация успешна'
+                    };
+                } else {
+                    return {
+                        success: false,
+                        message: 'Неверный логин или пароль'
+                    };
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Данные пользователя</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --primary-light: #e0e7ff;
+            --primary-dark: #3a56d0;
+            --secondary-color: #1e293b;
+            --bg-color: #f8fafc;
+            --border-color: #e2e8f0;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --card-bg: #ffffff;
+            --tab-active: #4361ee;
+            --tab-inactive: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--secondary-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .user-id {
+            font-size: 16px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .refresh-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .refresh-btn i {
+            margin-right: 8px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--tab-inactive);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--tab-active);
+            border-bottom: 2px solid var(--tab-active);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--secondary-color);
+            background-color: var(--primary-light);
+        }
+
+        tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4361ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        .tab-loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4361ee;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 10px;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .success-message {
+            color: var(--success-color);
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-expired {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .json-viewer {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .tab {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Лоадер для всей страницы -->
+    <div class="loader-overlay" id="globalLoader">
+        <div class="loader"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1 class="title">Данные пользователя</h1>
+                <div class="user-id" id="userIdDisplay">ID: загрузка...</div>
+            </div>
+            <button class="refresh-btn" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i>
+                Обновить все данные
+            </button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="info">
+                Основная информация
+                <div class="tab-loader" id="infoLoader"></div>
+            </div>
+            <div class="tab" data-tab="payments">
+                Платежи
+                <div class="tab-loader" id="paymentsLoader"></div>
+            </div>
+            <div class="tab" data-tab="closes">
+                Закрытые страницы
+                <div class="tab-loader" id="closesLoader"></div>
+            </div>
+            <div class="tab" data-tab="promocodes">
+                Промокоды
+                <div class="tab-loader" id="promocodesLoader"></div>
+            </div>
+        </div>
+
+        <!-- Основная информация -->
+        <div class="tab-content active" id="info-tab">
+            <div class="card">
+                <h2 class="card-title">Информация о пользователе</h2>
+                <div class="error-message" id="infoError"></div>
+                <div id="infoContent"></div>
+            </div>
+        </div>
+
+        <!-- Платежи -->
+        <div class="tab-content" id="payments-tab">
+            <div class="card">
+                <h2 class="card-title">История платежей</h2>
+                <div class="error-message" id="paymentsError"></div>
+                <div id="paymentsContent"></div>
+            </div>
+        </div>
+
+        <!-- Закрытые страницы -->
+        <div class="tab-content" id="closes-tab">
+            <div class="card">
+                <h2 class="card-title">Закрытые страницы</h2>
+                <div class="error-message" id="closesError"></div>
+                <div id="closesContent"></div>
+            </div>
+        </div>
+
+        <!-- Промокоды -->
+        <div class="tab-content" id="promocodes-tab">
+            <div class="card">
+                <h2 class="card-title">Активированные промокоды</h2>
+                <div class="error-message" id="promocodesError"></div>
+                <div id="promocodesContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Получаем ID пользователя из GET-параметра
+        const urlParams = new URLSearchParams(window.location.search);
+        let userId = urlParams.get('id');
+
+        // Элементы DOM
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const globalLoader = document.getElementById('globalLoader');
+
+        // Данные пользователя
+        let userData = {
+            info: null,
+            payments: null,
+            closes: null,
+            promocodes: null
+        };
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!userId) {
+                alert('ID пользователя не указан в URL');
+                return;
+            }
+
+            userIdDisplay.textContent = `ID: ${userId}`;
+
+            // Загружаем все данные
+            loadAllData();
+
+            // Обработчики для вкладок
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+
+                    // Активируем выбранную вкладку
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+
+                    // Если данные уже загружены, просто отображаем их
+                    if (userData[tabId] !== null) {
+                        renderTabContent(tabId);
+                    }
+                });
+            });
+
+            // Обработчик для кнопки обновления
+            refreshBtn.addEventListener('click', function() {
+                loadAllData();
+            });
+        });
+
+        // Загрузка всех данных
+        async function loadAllData() {
+            globalLoader.style.display = 'flex';
+
+            try {
+                // Загружаем все данные параллельно
+                const [infoData, paymentsData, closesData, promocodesData] = await Promise.all([
+                    fetchData('info'),
+                    fetchData('payments'),
+                    fetchData('closes'),
+                    fetchData('promocodes')
+                ]);
+
+                // Сохраняем данные
+                userData.info = infoData;
+                userData.payments = paymentsData;
+                userData.closes = closesData;
+                userData.promocodes = promocodesData;
+
+                // Отображаем данные для активной вкладки
+                const activeTab = document.querySelector('.tab.active').getAttribute('data-tab');
+                renderTabContent(activeTab);
+
+            } catch (error) {
+                console.error('Ошибка при загрузке данных:', error);
+                alert('Произошла ошибка при загрузке данных');
+            } finally {
+                globalLoader.style.display = 'none';
+            }
+        }
+
+        // Загрузка данных для конкретного типа
+        async function fetchData(type) {
+            let endpoint;
+
+            switch(type) {
+                case 'info':
+                    endpoint = `/api/operator/chat/user/info?id=${userId}`;
+                    break;
+                case 'payments':
+                    endpoint = `/api/operator/chat/user/payments?id=${userId}`;
+                    break;
+                case 'closes':
+                    endpoint = `/api/operator/chat/user/closes?id=${userId}`;
+                    break;
+                case 'promocodes':
+                    endpoint = `/api/operator/chat/user/promocodes?id=${userId}`;
+                    break;
+                default:
+                    throw new Error('Неизвестный тип данных');
+            }
+
+            // Показываем лоадер для вкладки
+            document.getElementById(`${type}Loader`).style.display = 'inline-block';
+            document.getElementById(`${type}Error`).style.display = 'none';
+
+            try {
+                const response = await fetch(endpoint);
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error('Ошибка в данных ответа');
+                }
+
+                return data;
+
+            } catch (error) {
+                console.error(`Ошибка при загрузке ${type}:`, error);
+                document.getElementById(`${type}Error`).textContent = `Ошибка при загрузке данных: ${error.message}`;
+                document.getElementById(`${type}Error`).style.display = 'block';
+                throw error;
+            } finally {
+                document.getElementById(`${type}Loader`).style.display = 'none';
+            }
+        }
+
+        // Отрисовка содержимого вкладки
+        function renderTabContent(tabId) {
+            const data = userData[tabId];
+            const contentElement = document.getElementById(`${tabId}Content`);
+
+            if (!data) {
+                contentElement.innerHTML = '<div class="no-data">Данные не загружены</div>';
+                return;
+            }
+
+            switch(tabId) {
+                case 'info':
+                    renderUserInfo(contentElement, data.user);
+                    break;
+                case 'payments':
+                    renderPayments(contentElement, data.payments);
+                    break;
+                case 'closes':
+                    renderCloses(contentElement, data.closes);
+                    break;
+                case 'promocodes':
+                    renderPromocodes(contentElement, data.promocodes);
+                    break;
+            }
+        }
+
+        // Отрисовка основной информации о пользователе
+        function renderUserInfo(element, user) {
+            if (!user) {
+                element.innerHTML = '<div class="no-data">Данные пользователя не найдены</div>';
+                return;
+            }
+
+            const isActive = user.is_active ? 'Активен' : 'Неактивен';
+            const subscriptionType = getSubscriptionType(user.subscription_type);
+            const subscriptionExpiration = user.subscription_expiration ?
+                new Date(user.subscription_expiration * 1000).toLocaleString() : 'Нет подписки';
+
+            element.innerHTML = `
+                <table>
+                    <tr>
+                        <td>Telegram ID</td>
+                        <td>${user.user_id || 'Не указан'}</td>
+                    </tr>
+                    <tr>
+                        <td>Имя пользователя</td>
+                        <td>${user.username || 'Не указан'}</td>
+                    </tr>
+                    <tr>
+                        <td>Дата регистрации</td>
+                        <td>${new Date(user.created_at).toLocaleString()}</td>
+                    </tr>
+                    <tr>
+                        <td>Статус</td>
+                        <td>${isActive}</td>
+                    </tr>
+                    <tr>
+                        <td>Тип подписки</td>
+                        <td>${subscriptionType}</td>
+                    </tr>
+                    <tr>
+                        <td>Окончание подписки</td>
+                        <td>${subscriptionExpiration}</td>
+                    </tr>
+                    <tr>
+                        <td>Бесплатные закрытия</td>
+                        <td>${user.free_closes || 0}</td>
+                    </tr>
+                    <tr>
+                        <td>Администратор</td>
+                        <td>${user.is_admin ? 'Да' : 'Нет'}</td>
+                    </tr>
+                </table>
+            `;
+        }
+
+        // Отрисовка платежей
+        function renderPayments(element, payments) {
+            if (!payments || payments.length === 0) {
+                element.innerHTML = '<div class="no-data">Платежи не найдены</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Сумма</th>
+                            <th>Тариф</th>
+                            <th>Статус</th>
+                            <th>Срок</th>
+                            <th>UUID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            payments.forEach(payment => {
+                const statusBadge = getPaymentStatusBadge(payment.status);
+                const period = formatPeriod(payment.time);
+
+                html += `
+                    <tr>
+                        <td>${payment.id}</td>
+                        <td>${payment.amount} руб.</td>
+                        <td>${payment.plan}</td>
+                        <td>${statusBadge}</td>
+                        <td>${period}</td>
+                        <td>${payment.uuid}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            element.innerHTML = html;
+        }
+
+        // Отрисовка закрытых страниц
+        function renderCloses(element, closes) {
+            if (!closes || closes.length === 0) {
+                element.innerHTML = '<div class="no-data">Закрытые страницы не найдены</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>IP</th>
+                            <th>Устройство</th>
+                            <th>Браузер</th>
+                            <th>Система</th>
+                            <th>Закрыто до</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            closes.forEach(close => {
+                const closedTo = new Date(close.closed_to * 1000).toLocaleString();
+
+                html += `
+                    <tr>
+                        <td>${close.id}</td>
+                        <td>${close.ip}</td>
+                        <td>${close.device}</td>
+                        <td>${close.browser}</td>
+                        <td>${close.system}</td>
+                        <td>${closedTo}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            element.innerHTML = html;
+        }
+
+        // Отрисовка промокодов
+        function renderPromocodes(element, promocodes) {
+            if (!promocodes || promocodes.length === 0) {
+                element.innerHTML = '<div class="no-data">Активированные промокоды не найдены</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Код</th>
+                            <th>Тип</th>
+                            <th>Использования</th>
+                            <th>Статус</th>
+                            <th>Значение</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            promocodes.forEach(promo => {
+                const isActive = promo.is_active ? 'Активен' : 'Неактивен';
+                const value = formatPromoValue(promo.promo_type, promo.value);
+
+                html += `
+                    <tr>
+                        <td>${promo.code}</td>
+                        <td>${promo.promo_type}</td>
+                        <td>${promo.current_uses}/${promo.max_uses}</td>
+                        <td>${isActive}</td>
+                        <td>${value}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            element.innerHTML = html;
+        }
+
+        // Вспомогательные функции форматирования
+        function getSubscriptionType(type) {
+            const types = {
+                'N': 'Без подписки',
+                'plus': 'Plus',
+                'premium': 'Premium'
+            };
+            return types[type] || type;
+        }
+
+        function getPaymentStatusBadge(status) {
+            let badgeClass, badgeText;
+
+            switch(status) {
+                case 'pending':
+                    badgeClass = 'status-pending';
+                    badgeText = 'Ожидание';
+                    break;
+                case 'completed':
+                    badgeClass = 'status-active';
+                    badgeText = 'Завершен';
+                    break;
+                case 'failed':
+                    badgeClass = 'status-expired';
+                    badgeText = 'Ошибка';
+                    break;
+                default:
+                    badgeClass = '';
+                    badgeText = status;
+            }
+
+            return `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
+        }
+
+        function formatPeriod(seconds) {
+            if (!seconds) return 'Не указан';
+
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+
+            let result = [];
+            if (days > 0) result.push(`${days} дн.`);
+            if (hours > 0) result.push(`${hours} ч.`);
+            if (minutes > 0) result.push(`${minutes} мин.`);
+
+            return result.join(' ') || `${seconds} сек.`;
+        }
+
+        function formatPromoValue(type, value) {
+            if (type === 'plus') {
+                return formatPeriod(value);
+            }
+            return value;
+        }
+    </script>
+</body>
+</html>
