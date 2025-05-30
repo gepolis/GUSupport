@@ -16,7 +16,7 @@ def load_system_promt(BASE_PROMT):
     sp = BASE_PROMT
     for i in os.listdir("data"):
         if i.endswith(".txt"):
-            with open(f"data/{i}", "r") as f:
+            with open(f"data/{i}", "r", encoding="utf-8") as f:
                 sp += f.read()
 
     return sp

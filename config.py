@@ -12,3 +12,4 @@ SYSTEM_PROMT = ("Ты ассистент технической поддержк
 
 
 BASE_API_URL = "http://gosuslugi.com.ru/api/support/"
+#BASE_API_URL = "http://127.0.0.1:5001/api/support/"

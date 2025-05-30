@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Административная панель | Чат-система</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-lighter: #818cf8;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #94a3b8;
+            --gray-light: #e2e8f0;
+            --gray-lighter: #f1f5f9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--gray-lighter);
+            color: var(--dark);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: white;
+            border-right: 1px solid var(--gray-light);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            height: 100vh;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid var(--gray-light);
+            flex-shrink: 0;
+        }
+
+        .chat-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        /* Левая панель с чатами */
+        .chat-list-container {
+            width: 350px;
+            border-right: 1px solid var(--gray-light);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .chat-list-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .chat-search {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .chat-search input {
+            padding-left: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--gray-light);
+        }
+
+        .chat-search i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray);
+        }
+
+        .chat-filter {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .chat-filter::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .chat-filter-btn {
+            white-space: nowrap;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--gray-light);
+            background: white;
+            color: var(--dark);
+        }
+
+        .chat-filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .chat-item:hover {
+            background-color: var(--gray-lighter);
+        }
+
+        .chat-item.active {
+            background-color: var(--primary-lighter);
+            border-left: 3px solid var(--primary);
+        }
+
+        .chat-item-unread {
+            font-weight: bold;
+        }
+
+        .chat-item-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .chat-item-preview {
+            font-size: 0.85rem;
+            color: var(--gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Правая панель с сообщениями */
+        .chat-messages-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .chat-messages-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: var(--gray-lighter);
+        }
+
+        .message {
+            max-width: 75%;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            position: relative;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .message-operator {
+            background-color: var(--primary);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-client {
+            background-color: white;
+            margin-right: auto;
+            border: 1px solid var(--gray-light);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+            opacity: 0.8;
+        }
+
+        .chat-input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--gray-light);
+            background-color: white;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Кастомный скроллбар */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-light);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 992px) {
+            .chat-list-container {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .chat-list-container {
+                width: 100%;
+                display: none;
+            }
+
+            .chat-list-container.active {
+                display: flex;
+            }
+
+            .chat-messages-container {
+                display: none;
+            }
+
+            .chat-messages-container.active {
+                display: flex;
+            }
+        }
+
+        /* Dashboard styles */
+        .dashboard-container {
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: white;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--gray-light);
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1rem 1.5rem;
+        }
+
+        .badge {
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+        }
+
+        .nav-link {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: var(--dark);
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            color: var(--gray);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--gray-light);
+        }
+/* Кастомный скроллбар для WebKit-браузеров */
+.chat-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.chat-filter::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.chat-filter::-webkit-scrollbar-thumb {
+    background: var(--primary-light);
+    border-radius: 10px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track,
+.chat-filter::-webkit-scrollbar-track {
+    background: var(--gray-light);
+}
+
+/* Поддержка кастомного скроллбара в Firefox */
+.chat-list,
+.chat-messages,
+.chat-filter {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-light) var(--gray-light);
+}
+.chat-list-container,
+.chat-messages-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+/* Для chat-list и chat-messages: общий стиль скроллбаров */
+.chat-list,
+.chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-light) var(--gray-light);
+}
+
+.chat-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track {
+    background: var(--gray-light);
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: var(--primary-light);
+    border-radius: 10px;
+    border: 2px solid var(--gray-light);
+}
+
+/* Кастомный скроллбар (Chrome, Safari, Edge) */
+.chat-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar,
+.chat-filter::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb,
+.chat-filter::-webkit-scrollbar-thumb {
+    background: var(--primary-light);
+    border-radius: 10px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track,
+.chat-filter::-webkit-scrollbar-track {
+    background: var(--gray-light);
+}
+
+/* Firefox */
+.chat-list,
+.chat-messages,
+.chat-filter {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-light) var(--gray-light);
+}
+
+/* Контейнер с чатами: ограничиваем высоту */
+.chat-container {
+    display: flex;
+    height: calc(100vh - 64px); /* учтем высоту navbar */
+    overflow: hidden;
+    background-color: white;
+}
+
+/* Левый и правый блоки */
+.chat-list-container,
+.chat-messages-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Прокручиваемые области */
+.chat-list,
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Кастомный скроллбар (WebKit: Chrome, Safari, Edge) */
+.chat-list::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-list::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track {
+    background: var(--gray-light);
+}
+
+.chat-list::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: var(--primary-light);
+    border-radius: 10px;
+    border: 2px solid var(--gray-light);
+}
+
+.chat-list::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary);
+}
+
+/* Кастомный скроллбар (Firefox) */
+.chat-list,
+.chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-light) var(--gray-light);
+}
+
+    </style>
+</head>
+<body>
+    <!-- Сайдбар -->
+    <div class="sidebar">
+        <div class="d-flex flex-column h-100">
+            <div class="p-4 pb-2">
+                <h4 class="mb-0 d-flex align-items-center">
+                    <i class="bi bi-chat-square-text me-2 text-primary"></i>
+                    <span>Чат-система</span>
+                </h4>
+            </div>
+
+            <nav class="flex-grow-1 p-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item mb-2">
+                        <a class="nav-link active" href="#" id="dashboardTab">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Дашборд</span>
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link" href="#" id="operatorsTab">
+                            <i class="bi bi-people-fill"></i>
+                            <span>Операторы</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="chatsTab">
+                            <i class="bi bi-chat-left-text-fill"></i>
+                            <span>Чаты</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="p-3 border-top">
+                <div class="d-flex align-items-center">
+                    <div class="me-2">
+                        <i class="bi bi-person-circle fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="fw-medium">Администратор</div>
+                        <small class="text-muted">Online</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="main-content">
+        <!-- Навбар -->
+        <nav class="navbar navbar-expand-lg">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary me-3 d-lg-none" id="sidebarToggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h5 class="mb-0" id="pageTitle">Дашборд</h5>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-bell"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" id="logoutBtn">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="d-none d-md-inline">Выйти</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Контент -->
+        <div class="container-fluid p-0 h-100">
+            <!-- Дашборд -->
+            <div id="dashboardContent" class="content-section h-100">
+                <div class="dashboard-container">
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                                <i class="bi bi-people-fill text-primary fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Всего операторов</h6>
+                                            <h3 class="mb-0" id="totalOperators">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                                <i class="bi bi-chat-square-text-fill text-success fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Всего чатов</h6>
+                                            <h3 class="mb-0" id="totalChats">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                                <i class="bi bi-chat-dots-fill text-warning fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Открытые чаты</h6>
+                                            <h3 class="mb-0" id="openChats">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                                <i class="bi bi-chat-left-text-fill text-info fs-4"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Активные чаты</h6>
+                                            <h3 class="mb-0" id="activeChats">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Последние чаты</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Пользователь</th>
+                                            <th>Статус</th>
+                                            <th>Оператор</th>
+                                            <th>Дата</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentChats">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Загрузка...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Управление операторами -->
+            <div id="operatorsContent" class="content-section h-100" style="display: none;">
+                <div class="dashboard-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Управление операторами</h5>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOperatorModal">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Добавить оператора
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Логин</th>
+                                            <th>Роль</th>
+                                            <th class="text-end">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="operatorsList">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Загрузка...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Управление чатами -->
+            <div id="chatsContent" class="content-section h-100" style="display: none;">
+                <div class="chat-container">
+                    <!-- Левая панель с чатами -->
+                    <div class="chat-list-container active" id="chatListContainer">
+                        <div class="chat-list-header">
+                            <div class="chat-search">
+                                <i class="bi bi-search"></i>
+                                <input type="text" class="form-control" id="chatSearchInput" placeholder="Поиск по пользователю или оператору...">
+                            </div>
+                            <div class="chat-filter">
+                                <button class="chat-filter-btn active" data-filter="all">Все чаты</button>
+                                <button class="chat-filter-btn" data-filter="open">Открытые</button>
+                                <button class="chat-filter-btn" data-filter="in_progress">В работе</button>
+                                <button class="chat-filter-btn" data-filter="closed">Закрытые</button>
+                                <button class="chat-filter-btn" data-filter="unassigned">Без оператора</button>
+                            </div>
+                        </div>
+                        <div class="chat-list" id="chatList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Правая панель с сообщениями -->
+                    <div class="chat-messages-container" id="chatMessagesContainer">
+                        <div class="chat-messages-header">
+                            <div>
+                                <h5 class="mb-0" id="chatTitle">Выберите чат</h5>
+                                <small class="text-muted" id="chatStatus"></small>
+                            </div>
+                            <div id="chatActions" class="d-flex gap-2" style="display: none;">
+                                <button class="btn btn-sm btn-outline-secondary" id="backToChatsBtn">
+                                    <i class="bi bi-arrow-left me-1"></i>
+                                    Назад
+                                </button>
+                                <button class="btn btn-sm btn-secondary" id="assignOperatorBtn">
+                                    <i class="bi bi-person-plus me-1"></i>
+                                    Назначить
+                                </button>
+                                <button class="btn btn-sm btn-danger" id="closeChatBtn">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Закрыть
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-chat-square-text"></i>
+                                </div>
+                                <h5 class="mb-2">Выберите чат</h5>
+                                <p class="text-muted">Выберите чат из списка для просмотра сообщений</p>
+                            </div>
+                        </div>
+                        <div class="chat-input-container" id="messageForm" style="display: none;">
+                            <div class="input-group">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-lightning"></i>
+                                </button>
+                                <ul class="dropdown-menu" id="quickResponsesMenu">
+                                    <!-- Быстрые ответы загружаются здесь -->
+                                </ul>
+                                <input type="text" class="form-control" id="messageInput" placeholder="Введите сообщение..." autocomplete="off">
+                                <button class="btn btn-primary" id="sendMessageBtn">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления оператора -->
+    <div class="modal fade" id="addOperatorModal" tabindex="-1" aria-labelledby="addOperatorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addOperatorModalLabel">Добавить оператора</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="operatorLogin" class="form-label">Логин</label>
+                        <input type="text" class="form-control" id="operatorLogin" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="operatorPassword" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="operatorPassword" required>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="operatorIsAdmin">
+                        <label class="form-check-label" for="operatorIsAdmin">Администратор</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="saveOperatorBtn">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования оператора -->
+    <div class="modal fade" id="editOperatorModal" tabindex="-1" aria-labelledby="editOperatorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editOperatorModalLabel">Редактировать оператора</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editOperatorId">
+                    <div class="mb-3">
+                        <label for="editOperatorLogin" class="form-label">Логин</label>
+                        <input type="text" class="form-control" id="editOperatorLogin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editOperatorPassword" class="form-label">Новый пароль</label>
+                        <input type="password" class="form-control" id="editOperatorPassword" placeholder="Оставьте пустым, чтобы не менять">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="editOperatorIsAdmin">
+                        <label class="form-check-label" for="editOperatorIsAdmin">Администратор</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger" id="deleteOperatorBtn">Удалить</button>
+                    <button type="button" class="btn btn-primary" id="updateOperatorBtn">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно назначения оператора на чат -->
+    <div class="modal fade" id="assignOperatorModal" tabindex="-1" aria-labelledby="assignOperatorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignOperatorModalLabel">Назначить оператора</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="assignChatId">
+                    <div class="mb-3">
+                        <label for="assignOperatorSelect" class="form-label">Выберите оператора</label>
+                        <select class="form-select" id="assignOperatorSelect" required>
+                            <option value="">Выберите оператора</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="confirmAssignBtn">Назначить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация
+            loadStats();
+            loadRecentChats();
+            loadOperators();
+            loadQuickResponses();
+            loadOperatorsForAssign();
+
+            // Навигация по вкладкам
+            document.getElementById('dashboardTab').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('dashboardContent');
+                setActiveTab(this);
+                document.getElementById('pageTitle').textContent = 'Дашборд';
+            });
+
+            document.getElementById('operatorsTab').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('operatorsContent');
+                setActiveTab(this);
+                document.getElementById('pageTitle').textContent = 'Управление операторами';
+            });
+
+            document.getElementById('chatsTab').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSection('chatsContent');
+                setActiveTab(this);
+                document.getElementById('pageTitle').textContent = 'Управление чатами';
+                loadChats('all');
+            });
+
+            // Переключение сайдбара на мобильных
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.querySelector('.sidebar').classList.toggle('active');
+            });
+
+            // Переключение между списком чатов и чатом на мобильных
+            document.getElementById('backToChatsBtn').addEventListener('click', function() {
+                document.getElementById('chatListContainer').classList.add('active');
+                document.getElementById('chatMessagesContainer').classList.remove('active');
+            });
+
+            // Фильтрация чатов
+            document.querySelectorAll('.chat-filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.chat-filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const filter = this.getAttribute('data-filter');
+                    loadChats(filter);
+                });
+            });
+
+            // Поиск чатов
+            const searchInput = document.getElementById('chatSearchInput');
+            let searchTimeout;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const filter = document.querySelector('.chat-filter-btn.active').getAttribute('data-filter');
+                    const searchTerm = this.value.trim();
+                    loadChats(filter, searchTerm);
+                }, 500);
+            });
+
+            // Добавление оператора
+            document.getElementById('saveOperatorBtn').addEventListener('click', function() {
+                const login = document.getElementById('operatorLogin').value.trim();
+                const password = document.getElementById('operatorPassword').value.trim();
+                const isAdmin = document.getElementById('operatorIsAdmin').checked;
+
+                if (!login || !password) {
+                    showError('Логин и пароль обязательны для заполнения');
+                    return;
+                }
+
+                if (password.length < 6) {
+                    showError('Пароль должен содержать минимум 6 символов');
+                    return;
+                }
+
+                fetch('/api/admin/create_operator', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        login: login,
+                        password: password,
+                        is_admin: isAdmin
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess('Оператор успешно создан');
+                        $('#addOperatorModal').modal('hide');
+                        document.getElementById('addOperatorForm').reset();
+                        loadOperators();
+                        loadOperatorsForAssign();
+                    } else {
+                        showError(data.error || 'Ошибка при создании оператора');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Произошла ошибка при создании оператора');
+                });
+            });
+
+            // Отправка сообщения
+            document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Закрытие чата
+            document.getElementById('closeChatBtn').addEventListener('click', function() {
+                const chatId = document.getElementById('chatMessages').getAttribute('data-chat-id');
+
+                Swal.fire({
+                    title: 'Закрыть чат?',
+                    text: 'Вы уверены, что хотите закрыть этот чат?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Да, закрыть',
+                    cancelButtonText: 'Отмена',
+                    confirmButtonColor: '#4f46e5',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/api/admin/chat/${chatId}/close`, {
+                            method: 'POST'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                showSuccess('Чат успешно закрыт');
+                                loadChatMessages(chatId);
+                                loadChats('all');
+                                updateChatStatus(chatId, 'closed');
+                            } else {
+                                showError('Ошибка при закрытии чата');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showError('Произошла ошибка при закрытии чата');
+                        });
+                    }
+                });
+            });
+
+            // Назначение оператора
+            document.getElementById('confirmAssignBtn').addEventListener('click', function() {
+                const chatId = document.getElementById('assignChatId').value;
+                const operatorId = document.getElementById('assignOperatorSelect').value;
+
+                if (!operatorId) {
+                    showError('Выберите оператора');
+                    return;
+                }
+
+                fetch(`/api/admin/chat/${chatId}/assign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        operator_id: operatorId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess('Оператор успешно назначен');
+                        $('#assignOperatorModal').modal('hide');
+                        loadChats('all');
+                        if (chatId === document.getElementById('chatMessages').getAttribute('data-chat-id')) {
+                            loadChatMessages(chatId);
+                        }
+                    } else {
+                        showError(data.error || 'Ошибка при назначении оператора');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('Произошла ошибка при назначении оператора');
+                });
+            });
+
+            // Обработчик для быстрых ответов
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('quick-response')) {
+                    document.getElementById('messageInput').value = e.target.getAttribute('data-text');
+                    document.getElementById('messageInput').focus();
+                }
+            });
+
+            // Выход из системы
+            document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
+        });
+
+        // ========== ФУНКЦИИ ДЛЯ ЧАТА ========== //
+
+        let currentPage = 1;
+let totalPages = 1;
+let isLoadingChats = false;
+
+function loadChats(filter, searchTerm = '', append = false, page = 1) {
+    if (isLoadingChats || (append && page > totalPages)) return;
+    isLoadingChats = true;
+
+    let url = `/api/admin/chats?status=${filter}&page=${page}`;
+    if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const chatList = document.getElementById('chatList');
+
+            if (!append) {
+                chatList.innerHTML = '';
+                currentPage = 1;
+            }
+
+            totalPages = data.pages;
+
+            if (data.chats.length === 0 && !append) {
+                chatList.innerHTML = `<div class="text-center py-4 text-muted">Нет чатов</div>`;
+                return;
+            }
+
+            data.chats.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = `chat-item ${chat.unread ? 'chat-item-unread' : ''}`;
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <strong class="me-2">Чат #${chat.id}</strong>
+                                <span class="badge ${getStatusBadgeClass(chat.status)}">${getStatusText(chat.status)}</span>
+                            </div>
+                            <div class="text-muted small">${chat.user_id}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small chat-item-time">...</div>
+                        </div>
+                    </div>
+                    <div class="chat-item-preview">${chat.last_message || 'Нет сообщений'}</div>
+                    ${chat.operator_name ? `<div class="small text-muted mt-1">Оператор: ${chat.operator_name}</div>` : ''}
+                `;
+
+                item.addEventListener('click', function () {
+                    if (window.innerWidth < 768) {
+                        document.getElementById('chatListContainer').classList.remove('active');
+                        document.getElementById('chatMessagesContainer').classList.add('active');
+                    }
+
+                    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+
+                    openChat(chat.id);
+                });
+
+                chatList.appendChild(item);
+            });
+
+            currentPage++;
+        })
+        .catch(err => {
+            console.error('Ошибка подгрузки чатов:', err);
+        })
+        .finally(() => {
+            isLoadingChats = false;
+        });
+}
+document.getElementById('chatList').addEventListener('scroll', function () {
+    const filter = document.querySelector('.chat-filter-btn.active')?.getAttribute('data-filter') || 'all';
+    const searchTerm = document.getElementById('chatSearchInput')?.value.trim() || '';
+
+    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
+        loadChats(filter, searchTerm, true, currentPage);
+    }
+});
+
+
+        function openChat(chatId) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageForm = document.getElementById('messageForm');
+
+            chatMessages.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+            `;
+
+            chatMessages.setAttribute('data-chat-id', chatId);
+
+            fetch(`/api/admin/chat/${chatId}`)
+                .then(response => response.json())
+                .then(chatInfo => {
+                    document.getElementById('chatTitle').textContent = `Чат #${chatId}`;
+                    document.getElementById('chatStatus').textContent = getStatusText(chatInfo.status);
+
+                    const chatActions = document.getElementById('chatActions');
+                    if (chatInfo.status === 'open' || chatInfo.status === 'in_progress') {
+                        chatActions.style.display = 'flex';
+                        messageForm.style.display = 'block';
+                    } else {
+                        chatActions.style.display = 'none';
+                        messageForm.style.display = 'none';
+                    }
+
+                    loadChatMessages(chatId);
+                })
+                .catch(error => {
+                    console.error('Error loading chat info:', error);
+                    chatMessages.innerHTML = `
+                        <div class="text-center py-4 text-danger">
+                            Ошибка загрузки информации о чате
+                        </div>
+                    `;
+                });
+        }
+
+        function loadChatMessages(chatId) {
+            fetch(`/api/admin/chat/${chatId}/messages`)
+                .then(response => response.json())
+                .then(messages => {
+                    const messagesContainer = document.getElementById('chatMessages');
+                    messagesContainer.innerHTML = '';
+
+                    if (messages.length === 0) {
+                        messagesContainer.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">
+                                    <i class="bi bi-chat-square"></i>
+                                </div>
+                                <h5 class="mb-2">Нет сообщений</h5>
+                                <p class="text-muted">В этом чате пока нет сообщений</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    messages.forEach(message => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `message ${message.role === 'operator' ? 'message-operator' : 'message-client'} fade-in`;
+                        messageDiv.innerHTML = `
+                            <div class="message-info small mb-1">
+                                ${message.role === 'operator' ? 'Оператор' : 'Клиент'} • ${formatDateTime(message.created_at)}
+                            </div>
+                            <div class="message-text">${message.message}</div>
+                        `;
+                        messagesContainer.appendChild(messageDiv);
+                    });
+
+                    // Прокрутка вниз
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                })
+                .catch(error => {
+                    console.error('Error loading chat messages:', error);
+                    messagesContainer.innerHTML = `
+                        <div class="text-center py-4 text-danger">
+                            Ошибка загрузки сообщений
+                        </div>
+                    `;
+                });
+        }
+
+        function sendMessage() {
+            const chatId = document.getElementById('chatMessages').getAttribute('data-chat-id');
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                showError('Введите текст сообщения');
+                messageInput.focus();
+                return;
+            }
+
+            const sendBtn = document.getElementById('sendMessageBtn');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Отправка...';
+
+            fetch(`/api/admin/chat/${chatId}/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageInput.value = '';
+                    loadChatMessages(chatId);
+                    loadChats('all'); // Обновляем список чатов
+                } else {
+                    showError('Ошибка при отправке сообщения');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('Произошла ошибка при отправке сообщения');
+            })
+            .finally(() => {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="bi bi-send"></i>';
+            });
+        }
+
+        function assignOperator(chatId) {
+            document.getElementById('assignChatId').value = chatId;
+            const modal = new bootstrap.Modal(document.getElementById('assignOperatorModal'));
+            modal.show();
+        }
+
+        // Обработчик кнопки назначения оператора
+        document.getElementById('assignOperatorBtn').addEventListener('click', function() {
+            const chatId = document.getElementById('chatMessages').getAttribute('data-chat-id');
+            assignOperator(chatId);
+        });
+
+        // ========== ФУНКЦИИ ДЛЯ ОПЕРАТОРОВ ========== //
+
+        function loadOperators() {
+            fetch('/api/admin/operators')
+                .then(response => response.json())
+                .then(operators => {
+                    const tbody = document.getElementById('operatorsList');
+                    tbody.innerHTML = '';
+
+                    if (operators.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    Нет зарегистрированных операторов
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    operators.forEach(operator => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${operator.id}</td>
+                            <td>
+                                ${operator.login}
+                                ${operator.is_admin ? '<span class="badge bg-danger ms-1">Admin</span>' : ''}
+                            </td>
+                            <td>${operator.is_admin ? 'Администратор' : 'Оператор'}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary edit-operator" data-id="${operator.id}">
+                                    <i class="bi bi-pencil"></i> Редактировать
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // Обработчики для кнопок редактирования
+                    document.querySelectorAll('.edit-operator').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const operatorId = this.getAttribute('data-id');
+                            editOperator(operatorId);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading operators:', error);
+                    showError('Ошибка загрузки списка операторов');
+                });
+        }
+
+        function editOperator(operatorId) {
+            fetch(`/api/admin/operator/${operatorId}`)
+                .then(response => response.json())
+                .then(operator => {
+                    document.getElementById('editOperatorId').value = operator.id;
+                    document.getElementById('editOperatorLogin').value = operator.login;
+                    document.getElementById('editOperatorIsAdmin').checked = operator.is_admin;
+
+                    const modal = new bootstrap.Modal(document.getElementById('editOperatorModal'));
+                    modal.show();
+
+                    // Обработчик сохранения изменений
+                    document.getElementById('updateOperatorBtn').onclick = function() {
+                        const data = {
+                            login: document.getElementById('editOperatorLogin').value.trim(),
+                            is_admin: document.getElementById('editOperatorIsAdmin').checked
+                        };
+
+                        const password = document.getElementById('editOperatorPassword').value.trim();
+                        if (password) {
+                            if (password.length < 6) {
+                                showError('Пароль должен содержать минимум 6 символов');
+                                return;
+                            }
+                            data.password = password;
+                        }
+
+                        fetch(`/api/admin/update_operator/${operator.id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                showSuccess('Оператор успешно обновлен');
+                                modal.hide();
+                                loadOperators();
+                                loadOperatorsForAssign();
+                            } else {
+                                showError(data.error || 'Ошибка при обновлении оператора');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showError('Произошла ошибка при обновлении оператора');
+                        });
+                    };
+
+                    // Обработчик удаления оператора
+                    document.getElementById('deleteOperatorBtn').onclick = function() {
+                        Swal.fire({
+                            title: 'Удалить оператора?',
+                            text: 'Вы уверены, что хотите удалить этого оператора? Это действие нельзя отменить!',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Да, удалить',
+                            cancelButtonText: 'Отмена',
+                            confirmButtonColor: '#ef4444',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                fetch(`/api/admin/delete_operator/${operator.id}`, {
+                                    method: 'POST'
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        showSuccess('Оператор успешно удален');
+                                        modal.hide();
+                                        loadOperators();
+                                        loadOperatorsForAssign();
+                                    } else {
+                                        showError(data.error || 'Ошибка при удалении оператора');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    showError('Произошла ошибка при удалении оператора');
+                                });
+                            }
+                        });
+                    };
+                })
+                .catch(error => {
+                    console.error('Error loading operator:', error);
+                    showError('Не удалось загрузить данные оператора');
+                });
+        }
+
+        function loadOperatorsForAssign() {
+            fetch('/api/admin/operators')
+                .then(response => response.json())
+                .then(operators => {
+                    const select = document.getElementById('assignOperatorSelect');
+                    select.innerHTML = '<option value="">Выберите оператора</option>';
+
+                    operators.forEach(operator => {
+                        const option = document.createElement('option');
+                        option.value = operator.id;
+                        option.textContent = operator.login;
+                        select.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading operators for assign:', error);
+                });
+        }
+
+        // ========== ОБЩИЕ ФУНКЦИИ ========== //
+
+        function loadStats() {
+            fetch('/api/admin/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalOperators').textContent = data.total_operators;
+                    document.getElementById('totalChats').textContent = data.total_chats;
+                    document.getElementById('openChats').textContent = data.open_chats;
+                    document.getElementById('activeChats').textContent = data.active_chats;
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        }
+
+        function loadRecentChats() {
+            fetch('/api/admin/chats?per_page=5&status=in_progress')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('recentChats');
+                    tbody.innerHTML = '';
+
+                    if (data.chats.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Нет активных чатов
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    data.chats.forEach(chat => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'clickable-row';
+                        tr.innerHTML = `
+                            <td>${chat.id}</td>
+                            <td>${chat.user_name || chat.user_id}</td>
+                            <td><span class="badge ${getStatusBadgeClass(chat.status)}">${getStatusText(chat.status)}</span></td>
+                            <td>${chat.operator_name || '-'}</td>
+                            <td>${formatDate(chat.created_at)}</td>
+                        `;
+                        tr.addEventListener('click', () => {
+                            document.getElementById('chatsTab').click();
+                            setTimeout(() => {
+                                openChat(chat.id);
+                            }, 100);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading recent chats:', error);
+                    showError('Ошибка загрузки последних чатов');
+                });
+        }
+
+        function loadQuickResponses() {
+            fetch('/api/admin/quick_responses')
+                .then(response => response.json())
+                .then(responses => {
+                    const menu = document.getElementById('quickResponsesMenu');
+                    menu.innerHTML = '';
+
+                    responses.forEach(response => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `
+                            <a class="dropdown-item quick-response" data-text="${response.text}">
+                                ${response.text}
+                            </a>
+                        `;
+                        menu.appendChild(item);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading quick responses:', error);
+                });
+        }
+
+        function updateChatStatus(chatId, status) {
+            const chatItems = document.querySelectorAll('.chat-item');
+            chatItems.forEach(item => {
+                if (item.textContent.includes(`Чат #${chatId}`)) {
+                    const badge = item.querySelector('.badge');
+                    if (badge) {
+                        badge.className = `badge ${getStatusBadgeClass(status)}`;
+                        badge.textContent = getStatusText(status);
+                    }
+                }
+            });
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        function setActiveTab(activeTab) {
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            activeTab.classList.add('active');
+        }
+
+        function logout() {
+            fetch('/admin/logout', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========== //
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'open': return 'Открыт';
+                case 'in_progress': return 'В работе';
+                case 'closed': return 'Закрыт';
+                default: return status;
+            }
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'open': return 'bg-warning';
+                case 'in_progress': return 'bg-primary';
+                case 'closed': return 'bg-success';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function showError(message) {
+            Swal.fire({
+                title: 'Ошибка',
+                text: message,
+                icon: 'error',
+                confirmButtonColor: '#4f46e5',
+            });
+        }
+
+        function showSuccess(message) {
+            Swal.fire({
+                title: 'Успешно',
+                text: message,
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    </script>
+</body>
+</html>

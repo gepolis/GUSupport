@@ -85,6 +85,7 @@
             display: flex;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+            overflow-x: auto;
         }
 
         .tab {
@@ -94,6 +95,7 @@
             color: var(--tab-inactive);
             border-bottom: 2px solid transparent;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .tab.active {
@@ -239,6 +241,46 @@
             overflow-y: auto;
         }
 
+        .profile-card {
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            background-color: white;
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .profile-primary {
+            background-color: var(--primary-light);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .profile-field {
+            margin-bottom: 8px;
+            display: flex;
+        }
+
+        .profile-field-label {
+            font-weight: 500;
+            min-width: 150px;
+            color: var(--secondary-color);
+        }
+
+        .profile-field-value {
+            flex-grow: 1;
+        }
+
+        .empty-field {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             th, td {
                 padding: 8px 10px;
@@ -252,6 +294,14 @@
             .tab {
                 padding: 10px 15px;
                 font-size: 14px;
+            }
+
+            .profile-field {
+                flex-direction: column;
+            }
+
+            .profile-field-label {
+                margin-bottom: 4px;
             }
         }
     </style>
@@ -283,6 +333,10 @@
                 Платежи
                 <div class="tab-loader" id="paymentsLoader"></div>
             </div>
+            <div class="tab" data-tab="profiles">
+                Профили
+                <div class="tab-loader" id="profilesLoader"></div>
+            </div>
             <div class="tab" data-tab="closes">
                 Закрытые страницы
                 <div class="tab-loader" id="closesLoader"></div>
@@ -308,6 +362,15 @@
                 <h2 class="card-title">История платежей</h2>
                 <div class="error-message" id="paymentsError"></div>
                 <div id="paymentsContent"></div>
+            </div>
+        </div>
+
+        <!-- Профили -->
+        <div class="tab-content" id="profiles-tab">
+            <div class="card">
+                <h2 class="card-title">Профили пользователя</h2>
+                <div class="error-message" id="profilesError"></div>
+                <div id="profilesContent"></div>
             </div>
         </div>
 
@@ -346,6 +409,7 @@
         let userData = {
             info: null,
             payments: null,
+            profiles: null,
             closes: null,
             promocodes: null
         };
@@ -393,9 +457,10 @@
 
             try {
                 // Загружаем все данные параллельно
-                const [infoData, paymentsData, closesData, promocodesData] = await Promise.all([
+                const [infoData, paymentsData, profilesData, closesData, promocodesData] = await Promise.all([
                     fetchData('info'),
                     fetchData('payments'),
+                    fetchData('profiles'),
                     fetchData('closes'),
                     fetchData('promocodes')
                 ]);
@@ -403,6 +468,7 @@
                 // Сохраняем данные
                 userData.info = infoData;
                 userData.payments = paymentsData;
+                userData.profiles = profilesData;
                 userData.closes = closesData;
                 userData.promocodes = promocodesData;
 
@@ -428,6 +494,9 @@
                     break;
                 case 'payments':
                     endpoint = `/api/operator/chat/user/payments?id=${userId}`;
+                    break;
+                case 'profiles':
+                    endpoint = `/api/operator/chat/user/profiles?id=${userId}`;
                     break;
                 case 'closes':
                     endpoint = `/api/operator/chat/user/closes?id=${userId}`;
@@ -484,6 +553,9 @@
                     break;
                 case 'payments':
                     renderPayments(contentElement, data.payments);
+                    break;
+                case 'profiles':
+                    renderProfiles(contentElement, data.profiles);
                     break;
                 case 'closes':
                     renderCloses(contentElement, data.closes);
@@ -583,6 +655,101 @@
             });
 
             html += `</tbody></table>`;
+            element.innerHTML = html;
+        }
+
+        // Отрисовка профилей
+        function renderProfiles(element, profiles) {
+            if (!profiles || profiles.length === 0) {
+                element.innerHTML = '<div class="no-data">Профили не найдены</div>';
+                return;
+            }
+
+            let html = '';
+
+            profiles.forEach(profile => {
+                const isPrimary = profile.is_primary ? 'profile-primary' : '';
+                const createdAt = new Date(profile.created_at).toLocaleString();
+
+                html += `
+                    <div class="profile-card ${isPrimary}">
+                        <div class="profile-header">
+                            <span>${profile.name || 'Без названия'}</span>
+                            <span>ID: ${profile.id}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Дата создания:</span>
+                            <span class="profile-field-value">${createdAt}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">ФИО:</span>
+                            <span class="profile-field-value">
+                                ${formatField(profile.lastName)} ${formatField(profile.firstName)} ${formatField(profile.middleName)}
+                            </span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Пол:</span>
+                            <span class="profile-field-value">${formatField(profile.gender)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Дата рождения:</span>
+                            <span class="profile-field-value">${formatField(profile.birthDate)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Место рождения:</span>
+                            <span class="profile-field-value">${formatField(profile.birthPlace)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Паспорт:</span>
+                            <span class="profile-field-value">
+                                ${formatField(profile.passportNumber)} (${formatField(profile.passportCode)})
+                            </span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Дата выдачи паспорта:</span>
+                            <span class="profile-field-value">${formatField(profile.passportDate)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Кем выдан:</span>
+                            <span class="profile-field-value">${formatField(profile.passportIssued)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Адрес регистрации:</span>
+                            <span class="profile-field-value">${formatField(profile.registrationAddress)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Адрес проживания:</span>
+                            <span class="profile-field-value">${formatField(profile.livingAddress)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">ИНН:</span>
+                            <span class="profile-field-value">${formatField(profile.innNumber)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">СНИЛС:</span>
+                            <span class="profile-field-value">${formatField(profile.snilsNumber)}</span>
+                        </div>
+
+                        <div class="profile-field">
+                            <span class="profile-field-label">Показывать фото:</span>
+                            <span class="profile-field-value">${profile.showPhoto ? 'Да' : 'Нет'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
             element.innerHTML = html;
         }
 
@@ -719,6 +886,13 @@
         function formatPromoValue(type, value) {
             if (type === 'plus') {
                 return formatPeriod(value);
+            }
+            return value;
+        }
+
+        function formatField(value) {
+            if (!value || value.trim() === '') {
+                return '<span class="empty-field">не указано</span>';
             }
             return value;
         }
