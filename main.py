@@ -76,7 +76,7 @@ def get_chats():
 def get_my_chats():
     operator_id = request.cookies.get("operator_id")
     chats = ChatRequest.query.filter_by(
-        status="open", operator_mode="on", operator_id=operator_id
+        status="in_progress", operator_mode="on", operator_id=operator_id
     ).with_entities(ChatRequest.id, ChatRequest.user_id, ChatRequest.created_at, ChatRequest.operator_id).all()
     return {"chats": [chat._asdict() for chat in chats]}
 
